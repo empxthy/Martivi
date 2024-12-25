@@ -5,8 +5,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const urlInput = document.getElementById("url-input");
 
     chrome.storage.sync.get("accessKey", (data) => {
-        if (!data.accessKey) {
-            status.textContent = "Error! Access Key not found!";
+        const userKey = data.accessKey;
+
+        if (!userKey) {
+            status.textContent = "Error: Access Key not inserted!";
             status.classList.add("error");
             pasteLink.style.display = 'none';
             parseButton.style.display = 'none';
@@ -15,22 +17,20 @@ document.addEventListener("DOMContentLoaded", () => {
             setTimeout(() => {
                 chrome.runtime.openOptionsPage();
             }, 2000);
-        } else {
-            status.textContent = "";
-            status.classList.remove("error");
-            parseButton.disabled = false;
-            
-            parseButton.addEventListener("click", () => {
-                fetch('http://localhost:3000/api/validate', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ domain: "91.151.136.183" })
-                })
-                .then((response) => response.json())
-                .then((data) => status.textContent = data)
-            });
+            return;
+        }
+        else {
+            enableFunctionality();
         }
     });
-});
+
+    function enableFunctionality() {
+        status.textContent = "";
+        status.classList.remove("error");
+        parseButton.disabled = false;
+
+        parseButton.addEventListener("click", () => {
+            
+        });
+    }
+});  
