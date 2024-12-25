@@ -1,0 +1,28 @@
+{
+    "manifest_version": 3,
+    "name": "UNIPRO.GE",
+    "version": "1.0",
+    "icons": {
+        "16": "icons/extension-ico.png",
+        "48": "icons/extension-ico.png",
+        "128": "icons/extension-ico.png"
+    },
+    "description": "Automates the process of filling",
+    "permissions": ["storage", "scripting", "activeTab"],
+    "content_scripts": [ {
+      "js": [ "content.js" ],
+      "matches": [ "*://*/*" ]
+    } ],
+    "action": {
+      "default_title": "UNIRPO.GE",
+      "default_popup": "popup.html",
+      "default_icon": {
+        "128": "icons/extension-ico.png"
+      }
+    },
+    "background": {
+      "service_worker": "background.js"
+    },
+    "options_page": "options.html"
+}
+  
