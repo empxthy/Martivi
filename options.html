@@ -9,9 +9,16 @@
 <body>
   <h1>Settings</h1>
   <p for="accessKey" class="accessKey">Access Key:</p>
-  <input type="password" id="accessKeyInput" value="">
+  <input type="text" id="accessKeyInput" value="">
   <button id="saveButton">Save</button>
   <p id="status"></p>
+  <div class="btn__func" id="btn__func">
+    <h1 class="btn__func__h1">Functionality: </h1>
+    <label class="switch" id="switch">
+      <input type="checkbox">
+      <span class="slider round"></span>
+    </label>
+  </div>
   <script src="options.js"></script>
 </body>
 </html>

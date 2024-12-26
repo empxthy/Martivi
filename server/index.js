@@ -6,6 +6,7 @@ const app = express();
 const config = JSON.parse(fs.readFileSync("config.json", "utf-8"));
 
 const ACCESS_KEYS = config.ACCESS_KEYS;
+const IsFunctionalityEnabled = config.IsFunctionalityEnabled;
 const PORT = config.PORT || 3000;
 
 app.use(cors());
@@ -18,7 +19,7 @@ app.post("/rest/v2/api/validate", (req, res) => {
 
     if (foundKey) {
         res.status(200).json({
-            message: "Access Key accepted!",
+            message: `Access Key accepted! You authorized with ${foundKey.role} role.`,
             isValid: true,
             role: foundKey.role,
         });

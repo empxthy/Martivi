@@ -4,5 +4,6 @@
         { "key": "unipro2024", "role": "admin" },
         { "key": "uniproagency", "role": "user" }
     ],
-    "PORT": 3000
+    "PORT": 3000,
+    "IsFunctionalityEnabled": true
 }  

@@ -5,10 +5,25 @@ document.addEventListener("DOMContentLoaded", () => {
     const input = document.getElementById("accessKeyInput");
     const status = document.getElementById("status");
 
-    chrome.storage.sync.get("accessKey", (data) => {
+    const funcButton = document.getElementById("btn__func");
+
+    funcButton.style.display = 'none';
+
+    chrome.storage.sync.get(["accessKey", "role"], (data) => {
         if (data.accessKey) {
+            
             status.textContent = "Access Key already accepted!";
             status.style.color = '#00cc00';
+            input.setAttribute('readonly', true);
+            input.placeholder = 'You have already entered Access Key!';
+
+            setTimeout(() => {
+                status.innerText = '';
+            }, 2000)
+
+            if (data.role === 'creator' || data.role === 'admin') {
+                funcButton.style.display = 'block';
+            }
         }
     });
 
@@ -38,8 +53,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     status.style.color = '#00cc00';
                     status.textContent = data.message;
                     status.classList.remove("error");
+                    input.setAttribute('readonly', true);
+                    input.placeholder = 'You have already entered Access Key';
 
-                    chrome.storage.sync.set({ accessKey: access_Key }, () => {
+                    chrome.storage.sync.set({ accessKey: access_Key, role: data.role }, () => {
                         console.log("Access Key saved successfully!");
                     });
 
@@ -48,9 +65,11 @@ document.addEventListener("DOMContentLoaded", () => {
                         status.style.display = 'none';
                     }, 2000)
 
-                    setTimeout(() => {
-                        window.close();
-                    }, 5000)
+                    if(data.role === 'creator' || data.role === 'admin') {
+                        funcButton.style.display = 'block';
+                    } else {
+                        funcButton.style.display = 'none';
+                    }
                 } else {
                     status.style.color = '#ff0000';
                     status.textContent = data.message;
