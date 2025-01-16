@@ -8,9 +8,9 @@
         "128": "icons/extension-ico.png"
     },
     "description": "Automates the process of filling",
-    "permissions": ["storage", "scripting", "activeTab", "tabs"],
+    "permissions": ["storage", "scripting", "activeTab", "tabs", "webRequest"],
     "content_scripts": [ {
-      "js": [ "content.js" ],
+      "js": ["content.js"],
       "matches": [ "*://*/*" ]
     } ],
     "action": {
