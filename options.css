@@ -27,7 +27,7 @@ label {
   width: 100%;
 }
 
-input[type="text"] {
+input[type="password"] {
   width: 100%;
   max-width: 400px;
   padding: 10px;

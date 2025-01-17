@@ -1,5 +1,4 @@
 
-
 document.addEventListener("DOMContentLoaded", () => {
     const saveButton = document.getElementById("saveButton");
     const input = document.getElementById("accessKeyInput");
