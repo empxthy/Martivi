@@ -5,9 +5,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const input = document.getElementById("accessKeyInput");
     const status = document.getElementById("status");
 
-    const funcButton = document.getElementById("btn__func");
-
-    funcButton.style.display = 'none';
 
     chrome.storage.sync.get(["accessKey", "role"], (data) => {
         if (data.accessKey) {
@@ -20,10 +17,6 @@ document.addEventListener("DOMContentLoaded", () => {
             setTimeout(() => {
                 status.innerText = '';
             }, 2000)
-
-            if (data.role === 'creator' || data.role === 'admin') {
-                funcButton.style.display = 'block';
-            }
         }
     });
 
@@ -37,7 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        fetch('http://localhost:3000/rest/v2/api/validate', {
+        fetch('https://my-extension-server.vercel.app/api/validate', {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
@@ -64,12 +57,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         input.value = '';
                         status.style.display = 'none';
                     }, 2000)
-
-                    if(data.role === 'creator' || data.role === 'admin') {
-                        funcButton.style.display = 'block';
-                    } else {
-                        funcButton.style.display = 'none';
-                    }
                 } else {
                     status.style.color = '#ff0000';
                     status.textContent = data.message;
