@@ -1,11 +1,272 @@
 console.log("Content script injected successfully", new Date);
 
-// chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-//     if (message.action === "ss_fill" && message.data) {
-//         fillSS(message.data);
-//         return true;
-//     }
-// });
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === "ss_fill" && message.data) {
+        const url = message.data;
+        const proxyUrl = 'https://corsproxy.io/?';
+        const fetchURL = `${proxyUrl}${encodeURIComponent(url)}`;
+
+        fetch(fetchURL)
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, "text/html");
+            const nextDataScript = doc.getElementById('__NEXT_DATA__');
+
+            if (nextDataScript) {
+                try {
+                    const jsonData = JSON.parse(nextDataScript.textContent);
+                    const statement = jsonData.props.pageProps.dehydratedState.queries[0].state.data.data.statement;
+                    
+                    const images = statement.gallery.map(item => item.image.thumb_webp);
+                    
+                    fillSSForm({
+                        title: doc.querySelector('title').textContent,
+                        area: statement.area,
+                        city: statement.city_name,
+                        address: statement.address,
+                        urbanName: statement.district_name,
+                        rooms: statement.room_type_id,
+                        bedroomsQuantity: statement.bedroom_type_id,
+                        bathroomsQuantity: statement.bathroom_type_id,
+                        floor: statement.floor,
+                        floorQuantity: statement.total_floors,
+                        real_estate_type_id: statement.real_estate_type_id,
+                        condition_id: statement.condition_id,
+                        project_type_id: statement.project_type_id,
+                        deal_type_id: statement.deal_type_id,
+                        object_status: statement.status_id,
+                        images: images
+                    });
+                    
+                    sendResponse({ success: true });
+                } catch (error) {
+                    console.error("Error parsing JSON:", error);
+                    sendResponse({ success: false, error: error.message });
+                }
+            }
+        })
+        .catch(error => {
+            console.error("Error during fetch:", error);
+            sendResponse({ success: false, error: error.message });
+        });
+
+        return true;
+    }
+});
+
+async function fillSSForm(data) {
+    const realEstateTypeMapping = {
+        1: "ბინა",
+        2: "კერძო სახლი", 
+        3: "აგარაკი",
+        4: "მიწის ნაკვეთი",
+        5: "კომერციული",
+        6: "სასტუმრო"
+    };
+
+    const waitForElement = (selector, timeout = 5000) => {
+        return new Promise((resolve, reject) => {
+            const startTime = Date.now();
+            
+            const checkElement = () => {
+                const element = document.querySelector(selector);
+                if (element) {
+                    resolve(element);
+                } else if (Date.now() - startTime > timeout) {
+                    reject(new Error(`Element ${selector} not found after ${timeout}ms`));
+                } else {
+                    setTimeout(checkElement, 100);
+                }
+            };
+            
+            checkElement();
+        });
+    };
+
+    try {
+        const estateTypeButtons = document.querySelectorAll('.sc-f90a41ca-3');
+        const targetType = realEstateTypeMapping[data.real_estate_type_id];
+        
+        for (const button of estateTypeButtons) {
+            if (button.textContent.trim() === targetType) {
+                button.click();
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                break;
+            }
+        }
+
+        const dealTypeButtons = document.querySelectorAll('.sc-f90a41ca-3');
+        const dealTypeMapping = {
+            1: "იყიდება",
+            2: "ქირავდება",
+            3: "ქირავდება დღიურად",
+            4: "გირავდება"
+        };
+        const targetDeal = dealTypeMapping[data.deal_type_id];
+        
+        for (const button of dealTypeButtons) {
+            if (button.textContent.trim() === targetDeal) {
+                button.click();
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                break;
+            }
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const roomsXPath = '//*[@id="create-app-details"]/div[2]/div[1]/div[2]/div';
+        const roomsSection = document.evaluate(roomsXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+
+        if (roomsSection) {
+            const roomButtons = roomsSection.querySelectorAll('.sc-226b651b-0');
+            for (const button of roomButtons) {
+                const roomText = button.querySelector('p');
+                if (roomText && (roomText.textContent === data.rooms.toString() || 
+                    (data.rooms >= 8 && roomText.textContent === '8+'))) {
+                    button.click();
+                    break;
+                }
+            }
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        const bedroomsXPath = '//*[@id="create-app-details"]/div[2]/div[2]/div[2]/div';
+        const bedroomsSection = document.evaluate(bedroomsXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+
+        if (bedroomsSection) {
+            const bedroomButtons = bedroomsSection.querySelectorAll('.sc-226b651b-0');
+            for (const button of bedroomButtons) {
+                const bedroomText = button.querySelector('p');
+                if (bedroomText && bedroomText.textContent === data.bedroomsQuantity.toString()) {
+                    button.click();
+                    break;
+                }
+            }
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        const bathroomsXPath = '//*[@id="create-app-details"]/div[2]/div[7]/div[2]/div';
+        const bathroomsSection = document.evaluate(bathroomsXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+
+        if (bathroomsSection) {
+            const bathroomButtons = bathroomsSection.querySelectorAll('.sc-226b651b-0');
+            for (const button of bathroomButtons) {
+                const bathroomText = button.querySelector('p');
+                if (bathroomText && bathroomText.textContent === data.bathroomsQuantity.toString()) {
+                    button.click();
+                    break;
+                }
+            }
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        const statusXPath = '//*[@id="create-app-details"]/div[2]/div[8]/div[2]/div';
+        const statusSection = document.evaluate(statusXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+
+        if (statusSection) {
+            console.log('Status data:', data.object_status);
+            
+            const statusMapping = {
+                1: "ძველი აშენებული",
+                2: "ახალი აშენებული",
+                3: "მშენებარე"
+            };
+
+            const statusButtons = statusSection.querySelectorAll('.sc-226b651b-0');
+            const targetStatus = statusMapping[data.object_status];
+            
+            console.log('Target status:', targetStatus);
+            console.log('Available buttons:', Array.from(statusButtons).map(b => b.textContent));
+            
+            for (const button of statusButtons) {
+                const statusText = button.querySelector('p');
+                if (statusText && statusText.textContent === targetStatus) {
+                    console.log('Clicking status:', statusText.textContent);
+                    button.click();
+                    break;
+                }
+            }
+        }
+
+        const areaInput = document.querySelector('input[placeholder*="ფართი"]');
+        if (areaInput) {
+            areaInput.value = data.area;
+            areaInput.dispatchEvent(new Event('input', { bubbles: true }));
+            areaInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        const floorInput = document.querySelector('input[placeholder*="სართული"]');
+        if (floorInput) {
+            floorInput.value = data.floor;
+            floorInput.dispatchEvent(new Event('input', { bubbles: true }));
+            floorInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        const totalFloorsInput = document.querySelector('input[placeholder*="სართულიანობა"]');
+        if (totalFloorsInput) {
+            totalFloorsInput.value = data.floorQuantity;
+            totalFloorsInput.dispatchEvent(new Event('input', { bubbles: true }));
+            totalFloorsInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        const streetInput = document.querySelector('#react-select-5-input');
+        if (streetInput) {
+            streetInput.value = data.address;
+            streetInput.dispatchEvent(new Event('input', { bubbles: true }));
+            streetInput.dispatchEvent(new Event('change', { bubbles: true }));
+            streetInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+        }
+
+        if (data.images && data.images.length > 0) {
+            const fileInput = document.querySelector('.lgjkBz input[type="file"]');
+            const dropZone = document.querySelector('.lgjkBz');
+            
+            if (fileInput && dropZone) {
+                const dataTransfer = new DataTransfer();
+                
+                await Promise.all(data.images.map(async url => {
+                    const proxyUrl = 'https://cors-allow-cce7a54ca846.herokuapp.com/';
+                    const fullUrl = proxyUrl + url;
+                    
+                    try {
+                        const response = await fetch(fullUrl, {
+                            headers: {
+                                'Origin': window.location.origin,
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
+                        
+                        const blob = await response.blob();
+                        const fileName = url.split('/').pop();
+                        const file = new File([blob], fileName, { type: 'image/webp' });
+                        dataTransfer.items.add(file);
+                    } catch (error) {
+                        console.error('Error loading image:', url, error);
+                    }
+                }));
+
+                const dropEvent = new DragEvent('drop', {
+                    bubbles: true,
+                    cancelable: true,
+                    dataTransfer: dataTransfer
+                });
+
+                dropZone.dispatchEvent(dropEvent);
+
+                fileInput.files = dataTransfer.files;
+                fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        }
+
+    } catch (error) {
+        console.error('Error filling SS form:', error);
+    }
+}
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "myhome_fill" && message.data) {
@@ -371,16 +632,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 });
 
-function fillUniproForm(data) {
+async function fillUniproForm(data) {
     const realEstateType = document.querySelector('select[name="real_estate_type"]');
     if (realEstateType) {
         const estateTypeMapping = {
-            1: "1",  // კორპუსის ბინა
-            2: "2",  // სახლი და აგარაკი
-            3: "3",  // კომერციული ფართი
-            4: "4",  // მიწის ნაკვეთი
-            5: "5",  // სასტუმრო
-            6: "6"   // სასაწყობე/საწარმოო
+            1: "1",
+            2: "2",
+            3: "3",
+            4: "4",
+            5: "5",
+            6: "6"
         };
         realEstateType.value = estateTypeMapping[data.real_estate_type_id] || "1";
         realEstateType.dispatchEvent(new Event('change', { bubbles: true }));
@@ -389,10 +650,10 @@ function fillUniproForm(data) {
     const dealType = document.querySelector('select[name="deal_type"]');
     if (dealType) {
         const dealTypeMapping = {
-            1: "1",  // იყიდება
-            2: "2",  // ქირავდება
-            3: "3",  // ქირავდება დღიურად
-            4: "4",  // გაიცემა იჯარით
+            1: "1",
+            2: "2",
+            3: "3",
+            4: "4",
         };
         dealType.value = dealTypeMapping[data.deal_type_id] || "1";
         dealType.dispatchEvent(new Event('change', { bubbles: true }));
@@ -431,13 +692,13 @@ function fillUniproForm(data) {
     const objectCondition = document.querySelector('select[name="object_condition"]');
     if (objectCondition) {
         const conditionMapping = {
-            1: "1", // ახალი გარემონტებული
-            2: "4", // ძველი რემონტი
-            3: "2", // მიმდინარე რემონტი
-            4: "3", // სარემონტო
-            5: "5", // თეთრი კარკასი
-            6: "6", // შავი კარკასი
-            7: "8"  // მწვანე კარკასი
+            1: "1",
+            2: "4",
+            3: "2",
+            4: "3",
+            5: "5",
+            6: "6",
+            7: "8" 
         };
         objectCondition.value = conditionMapping[data.condition_id] || "1";
         objectCondition.dispatchEvent(new Event('change', { bubbles: true }));
@@ -446,14 +707,14 @@ function fillUniproForm(data) {
     const propertyProject = document.querySelector('select[name="property_project"]');
     if (propertyProject) {
         const projectMapping = {
-            1: "8",  // ლვოვის
-            2: "3",  // ყავლაშვილის
-            3: "10", // თუხარელის
-            4: "2",  // ხრუშოვი
-            5: "7",  // ჩეხური
-            6: "5",  // ქალაქური
-            7: "9",  // მოსკოვის
-            8: "1"   // არასტანდარტული
+            1: "8",
+            2: "3",
+            3: "10",
+            4: "2",
+            5: "7",
+            6: "5",
+            7: "9",
+            8: "1" 
         };
         propertyProject.value = projectMapping[data.project_type_id] || "1";
         propertyProject.dispatchEvent(new Event('change', { bubbles: true }));
