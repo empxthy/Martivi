@@ -10,7 +10,7 @@
     "description": "Automates the process of filling",
     "permissions": ["storage", "scripting", "activeTab", "tabs", "webRequest"],
     "content_scripts": [ {
-      "js": ["content.js"],
+      "js": ["content.min.js"],
       "matches": [ "*://*/*" ]
     } ],
     "action": {
