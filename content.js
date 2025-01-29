@@ -138,7 +138,7 @@ async function fillSSForm(data) {
             const bedroomButtons = bedroomsSection.querySelectorAll('.sc-226b651b-0');
             for (const button of bedroomButtons) {
                 const bedroomText = button.querySelector('p');
-                if (bedroomText && bedroomText.textContent === data.bedroomsQuantity.toString()) {
+                if (bedroomText && bedroomText.textContent === data.bedroomsQuantity) {
                     button.click();
                     break;
                 }
@@ -154,7 +154,7 @@ async function fillSSForm(data) {
             const bathroomButtons = bathroomsSection.querySelectorAll('.sc-226b651b-0');
             for (const button of bathroomButtons) {
                 const bathroomText = button.querySelector('p');
-                if (bathroomText && bathroomText.textContent === data.bathroomsQuantity.toString()) {
+                if (bathroomText && bathroomText.textContent === data.bathroomsQuantity) {
                     button.click();
                     break;
                 }
@@ -175,18 +175,21 @@ async function fillSSForm(data) {
                 3: "მშენებარე"
             };
 
-            const statusButtons = statusSection.querySelectorAll('.sc-226b651b-0');
-            const targetStatus = statusMapping[data.object_status];
+            const statusButtons = '//*[@id="create-app-details"]/div[2]/div[3]/div[2]/div';
+            const statusSection = document.evaluate(bathroomsXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
             
-            console.log('Target status:', targetStatus);
+            
             console.log('Available buttons:', Array.from(statusButtons).map(b => b.textContent));
             
-            for (const button of statusButtons) {
-                const statusText = button.querySelector('p');
-                if (statusText && statusText.textContent === targetStatus) {
-                    console.log('Clicking status:', statusText.textContent);
-                    button.click();
-                    break;
+            if(statusSection) {
+                const statusButtons = statusSection.querySelectorAll('.sc-226b651b-0');
+                for(const button of statusButtons) {
+                    const statusText = button.querySelector('p');
+                    if (statusText && statusText.textContent === data.condition_id) {
+                        console.log('Clicking status:', statusText.textContent);
+                        button.click();
+                        break;
+                    }
                 }
             }
         }
@@ -428,7 +431,7 @@ async function fillMyHomeForm(data) {
         if (bedroomsSection) {
             const labels = bedroomsSection.querySelectorAll('label');
             for (const label of labels) {
-                if (label.textContent.trim() === data.bedroomsQuantity.toString()) {
+                if (label.textContent.trim() === data.bedroomsQuantity) {
                     label.click();
                     break;
                 }
@@ -474,7 +477,7 @@ async function fillMyHomeForm(data) {
             
             const bathroomOptions = document.querySelectorAll('.options-list li');
             for (const option of bathroomOptions) {
-                if (option.textContent.trim() === data.bathroomsQuantity.toString()) {
+                if (option.textContent.trim() === data.bathroomsQuantity) {
                     option.click();
                     break;
                 }
@@ -537,9 +540,28 @@ async function fillMyHomeForm(data) {
             await new Promise(resolve => setTimeout(resolve, 1000));
             
             const statusMapping = {
-                1: "ძველი აშენებული",
-                2: "ახალი აშენებული",
-                3: "მშენებარე"
+                1:"ძველი აშენებული",
+                2:"ახალი აშენებული",
+                3:"მშენებარე",
+                4:"სასოფლო-სამეურნეო",
+                5:"არასასოფლო",
+                6:"კომერციული",
+                7:"სპეციალური",
+                8:"საოფისე",
+                9:"სავაჭრო",
+                10:"სასაწყობე",
+                11:"საწარმოო",
+                12:"კვების ობიექტი",
+                13:"ავტოფარეხი",
+                18:"საინვესტიციო",
+                23:"დასრულებული",
+                24:"უნივერსალური",
+                25:"სარდაფი",
+                26:"ნახევარსარდაფი",
+                27:"მთლიანი შენობა",
+                28:"ავტოსამრეცხაო",
+                29:"ავტოსერვისი",
+                30:"ფერმა"
             };
             
             console.log('Status data:', data.object_status);
@@ -628,7 +650,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             console.error("Error during fetch:", error);
         });
 
-        return true;
+    return true;
     }
 });
 
@@ -643,8 +665,15 @@ async function fillUniproForm(data) {
             5: "5",
             6: "6"
         };
-        realEstateType.value = estateTypeMapping[data.real_estate_type_id] || "1";
-        realEstateType.dispatchEvent(new Event('change', { bubbles: true }));
+
+        if(data.real_estate_type_id == 5) {
+            realEstateType.value = "3";
+            realEstateType.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        else{
+            realEstateType.value = estateTypeMapping[data.real_estate_type_id] || "1";
+            realEstateType.dispatchEvent(new Event('change', { bubbles: true }));
+        }
     }
 
     const dealType = document.querySelector('select[name="deal_type"]');
@@ -692,13 +721,13 @@ async function fillUniproForm(data) {
     const objectCondition = document.querySelector('select[name="object_condition"]');
     if (objectCondition) {
         const conditionMapping = {
-            1: "1",
-            2: "4",
-            3: "2",
-            4: "3",
-            5: "5",
-            6: "6",
-            7: "8" 
+            "1":"დასრულებული რემონტით",
+            "2":"მწვანე კარკასი",
+            "3":"შავი კარკასი",
+            "4":"თეთრი კარკასი",
+            "5":"ნაკვეთთან მიყვანილი კომუნიკაციით",
+            "6":"დამტკიცებული პროექტით",
+            "7":"დამტკიცებული პროექტი - კომუნიკაციით"
         };
         objectCondition.value = conditionMapping[data.condition_id] || "1";
         objectCondition.dispatchEvent(new Event('change', { bubbles: true }));

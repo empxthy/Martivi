@@ -7,18 +7,33 @@
         "48": "icons/extension-ico.png",
         "128": "icons/extension-ico.png"
     },
-    "description": "Automates the process of filling",
-    "permissions": ["storage", "scripting", "activeTab", "tabs", "webRequest"],
-    "content_scripts": [ {
-      "js": ["content.min.js"],
-      "matches": [ "*://*/*" ]
-    } ],
+    "description": "Automates the process of filling forms on specific real estate websites",
+    "permissions": [
+        "storage",
+        "activeTab"
+    ],
+    "host_permissions": [
+        "https://statements.myhome.ge/*",
+        "https://unipro.ge/*",
+        "https://home.ss.ge/*",
+        "https://my-extension-server.vercel.app/*"
+    ],
+    "content_scripts": [{
+        "js": ["content.js"],
+        "matches": [
+            "https://statements.myhome.ge/*",
+            "https://unipro.ge/*",
+            "https://home.ss.ge/*"
+        ]
+    }],
     "action": {
-      "default_title": "UNIRPO.GE",
-      "default_popup": "popup.html",
-      "default_icon": {
-        "128": "icons/extension-ico.png"
-      }
+        "default_title": "Martivi Form Filler",
+        "default_popup": "popup.html",
+        "default_icon": {
+            "16": "icons/extension-ico.png",
+            "48": "icons/extension-ico.png",
+            "128": "icons/extension-ico.png"
+        }
     },
     "background": {
       "service_worker": "background.js"

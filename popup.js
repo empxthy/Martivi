@@ -37,10 +37,12 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Insert LINK!");
             return;
         }
-    
-        fillMyHome(url);
-        fillUnipro(url);
-        fillSS(url);
+
+        if(url.includes('https://www.myhome.ge/pr/')) {
+            fillMyHome(url);
+            fillUnipro(url);
+            fillSS(url);
+        }
     });
     
     const fillMyHome = (data) => {
