@@ -42,6 +42,8 @@ document.addEventListener("DOMContentLoaded", () => {
             fillMyHome(url);
             fillUnipro(url);
             fillSS(url);
+        } else {
+            alert("Invalid URL!");
         }
     });
     

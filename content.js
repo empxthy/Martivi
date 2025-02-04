@@ -36,7 +36,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                         project_type_id: statement.project_type_id,
                         deal_type_id: statement.deal_type_id,
                         object_status: statement.status_id,
-                        images: images
+                        images: images,
+                        goodParams: statement.parameters
                     });
                     
                     sendResponse({ success: true });
@@ -145,16 +146,20 @@ async function fillSSForm(data) {
             }
         }
 
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        const bathroomXPath = '//*[@id="create-app-details"]/div[2]/div[7]/div[2]';
+        const bathroomSection = document.evaluate(bathroomXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
 
-        const bathroomsXPath = '//*[@id="create-app-details"]/div[2]/div[7]/div[2]/div';
-        const bathroomsSection = document.evaluate(bathroomsXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+        if (bathroomSection) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            console.log('Bathrooms Quantity:', data.bathroomsQuantity);
 
-        if (bathroomsSection) {
-            const bathroomButtons = bathroomsSection.querySelectorAll('.sc-226b651b-0');
-            for (const button of bathroomButtons) {
-                const bathroomText = button.querySelector('p');
-                if (bathroomText && bathroomText.textContent === data.bathroomsQuantity) {
+            const buttons = bathroomSection.querySelectorAll('div[class*="sc-226b651b-0 kgzsHg"]');
+            for (const button of buttons) {
+                const buttonText = button.querySelector('p')?.textContent.trim();
+                console.log('Checking button text:', buttonText);
+                
+                if (buttonText === data.bathroomsQuantity.toString()) {
+                    console.log('Clicking bathroom button:', buttonText);
                     button.click();
                     break;
                 }
@@ -175,19 +180,27 @@ async function fillSSForm(data) {
                 3: "მშენებარე"
             };
 
-            const statusButtons = '//*[@id="create-app-details"]/div[2]/div[3]/div[2]/div';
-            const statusSection = document.evaluate(bathroomsXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
-            
-            
-            console.log('Available buttons:', Array.from(statusButtons).map(b => b.textContent));
-            
-            if(statusSection) {
-                const statusButtons = statusSection.querySelectorAll('.sc-226b651b-0');
-                for(const button of statusButtons) {
-                    const statusText = button.querySelector('p');
-                    if (statusText && statusText.textContent === data.condition_id) {
-                        console.log('Clicking status:', statusText.textContent);
-                        button.click();
+            const statusText = statusMapping[data.object_status];
+            console.log('Looking for status text:', statusText);
+
+            if (statusText) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                const buttons = statusSection.querySelectorAll('div[class*="sc-226b651b-0 kgzsHg"]');
+                console.log('Found buttons:', buttons.length);
+
+                for (const button of buttons) {
+                    const buttonText = button.querySelector('p');
+                    console.log('Button text:', buttonText?.textContent.trim());
+                    
+                    if (buttonText && buttonText.textContent.trim() === statusText) {
+                        console.log('Found matching button:', statusText);
+                        button.dispatchEvent(new MouseEvent('click', {
+                            view: window,
+                            bubbles: true,
+                            cancelable: true
+                        }));
+                        await new Promise(resolve => setTimeout(resolve, 500));
                         break;
                     }
                 }
@@ -266,6 +279,62 @@ async function fillSSForm(data) {
             }
         }
 
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        const setAdditionalInfo = async (displayName) => {
+            const additionalInfoButtons = Array.from(document.querySelectorAll('#create-app-additional-info .sc-226b651b-1'));
+            const button = additionalInfoButtons.find(btn => {
+                const p = btn.querySelector('p');
+                return p && p.textContent.trim() === displayName;
+            });
+
+            if (button) {
+                console.log('Setting additional info for:', displayName);
+                button.click();
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+        };
+
+        const parameters = data.goodParams;
+        console.log('Parameters to set:', parameters);
+
+        const additionalInfoMapping = {
+            "internet": "ინტერნეტი",
+            "gas": "ბუნებრივი აირი",
+            "elevator": "ლიფტი",
+            "garage": "გარაჟი",
+            "heating": "ცენტ. გათბობა",
+            "storage": "სათავსო",
+            "basement": "სარდაფი",
+            "balcony": "აივანი",
+            "last_floor": "ბოლო სართული"
+        };
+
+        const additionalInfoXPath = '//*[@id="create-app-additional-info"]/div[2]';
+        const additionalInfoSection = document.evaluate(additionalInfoXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+
+        if (additionalInfoSection) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            const buttons = additionalInfoSection.querySelectorAll('div[class*="sc-226b651b-1"]');
+            console.log('Found additional info buttons:', buttons.length);
+
+            for (const param of data.goodParams) {
+                if (param.display_name) {
+                    console.log('Checking for param:', param.display_name);
+                    
+                    for (const button of buttons) {
+                        const buttonText = button.querySelector('p')?.textContent.trim();
+                        if (buttonText === param.display_name) {
+                            console.log('Clicking button for:', buttonText);
+                            button.click();
+                            await new Promise(resolve => setTimeout(resolve, 200));
+                            break;
+                        }
+                    }
+                }
+            }
+        }
     } catch (error) {
         console.error('Error filling SS form:', error);
     }
@@ -299,6 +368,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                         city: statement.city_name,
                         address: statement.address,
                         urbanName: statement.district_name,
+                        buildYear: statement.build_year,
                         rooms: statement.room_type_id,
                         bedroomsQuantity: statement.bedroom_type_id,
                         bathroomsQuantity: statement.bathroom_type_id,
@@ -308,7 +378,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                         project_type_id: statement.project_type_id,
                         deal_type_id: statement.deal_type_id,
                         object_status: statement.status_id,
-                        images: images
+                        condition_id: statement.condition_id,
+                        images: images,
+                        goodParams: statement.parameters
                     });
                     
                     sendResponse({ success: true });
@@ -477,7 +549,22 @@ async function fillMyHomeForm(data) {
             
             const bathroomOptions = document.querySelectorAll('.options-list li');
             for (const option of bathroomOptions) {
-                if (option.textContent.trim() === data.bathroomsQuantity) {
+                if (option.textContent.trim() === data.bathroomsQuantity.toString()) {
+                    option.click();
+                    break;
+                }
+            }
+        }
+
+        const buildYearXPath = '//*[@id="1"]/div[2]/div/div[12]/div/div/div';
+        const buildYearSection = await waitForXPath(buildYearXPath, 10000);
+        if (buildYearSection) {
+            buildYearSection.click();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            const buildYearOptions = document.querySelectorAll('.options-list li');
+            for (const option of buildYearOptions) {
+                if (option.textContent.trim() === data.buildYear.toString()) {
                     option.click();
                     break;
                 }
@@ -497,6 +584,41 @@ async function fillMyHomeForm(data) {
             addressInput.value = data.address;
             addressInput.dispatchEvent(new Event('input', { bubbles: true }));
             addressInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        const conditionXPath = '//*[@id="1"]/div[2]/div/div[14]/div/div/div';
+        const conditionSection = await waitForXPath(conditionXPath, 10000);
+        if (conditionSection) {
+            conditionSection.click();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            const conditionMapping = {
+                1: "ახალი გარემონტებული",
+                2: "ძველი გარემონტებული",
+                3: "მიმდინარე რემონტი",
+                4: "სარემონტო",
+                5: "თეთრი კარკასი",
+                6: "შავი კარკასი",
+                7: "მწვანე კარკასი",
+                8: "თეთრი პლიუსი"
+            };
+            
+            const conditionId = parseInt(data.condition_id);
+            const conditionText = conditionMapping[conditionId];
+
+            if (conditionText) {
+                const conditionOptions = Array.from(document.querySelectorAll('.options-list li'));
+                console.log('Available options:', conditionOptions.map(opt => opt.textContent.trim()));
+                
+                for (const option of conditionOptions) {
+                    const optionText = option.textContent.trim();
+                    if (optionText === conditionText) {
+                        option.click();
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        break;
+                    }
+                }
+            }
         }
 
         if (data.images && data.images.length > 0) {
@@ -595,8 +717,27 @@ async function fillMyHomeForm(data) {
                 }
             }
         }
+
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const checkboxButtons = document.querySelectorAll('.checkbox-button');
+
+        for (const param of data.goodParams) {
+            if (param.display_name) {
+                const checkboxButton = Array.from(checkboxButtons).find(btn => {
+                    const label = btn.querySelector('label');
+                    return label && label.textContent.trim() === param.display_name;
+                });
+
+                if (checkboxButton) {
+                    console.log('Setting checkbox for:', param.display_name);
+                    checkboxButton.click();
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                }
+            }
+        }
+
     } catch (error) {
-        console.error('Error filling form:', error);
+        console.error('Error filling MyHome form:', error);
     }
 }
 
@@ -639,7 +780,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                         project_type_id: statement.project_type_id,
                         deal_type_id: statement.deal_type_id,
                         object_status: statement.estate_status_types,
-                        images: images
+                        images: images,
+                        goodParams: statement.parameters
                     });
                 } catch (error) {
                     console.error("Error parsing JSON:", error);
@@ -846,6 +988,49 @@ async function fillUniproForm(data) {
     if (bathroomsInput) {
         bathroomsInput.value = data.bathroomsQuantity;
         bathroomsInput.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    const parameterMapping = {
+        "internet": "ინტერნეტი",
+        "tv": "ტელევიზორი",
+        "gas": "ბუნებრივი აირი",
+        "furniture": "ავეჯი",
+        "elevator": "სამგზავრო ლიფტი",
+        "truck_elevator": "სატვირთო ლიფტი",
+        "gym": "სპორტ დარბაზი",
+        "alarm": "სიგნალიზაცია",
+        "ventilation": "ვენტილაცია",
+        "telephone": "ტელეფონი",
+        "coded-door": "კოდიანი კარი",
+        "guard": "დაცვა",
+        "conditioner": "კონდიციონერი",
+        "refrigerator": "მაცივარი",
+        "washing_machine": "სარეცხი მანქანა",
+        "dishwasher": "ჭურჭლის სარეცხი მანქანა",
+        "kitchen": "სამზარეულოს ინვენტარი",
+        "investment": "საინვესტიციო"
+    };
+
+    const parameters = data.goodParams;
+    console.log('Parameters to set:', parameters);
+
+    const checkboxes = document.querySelectorAll('.form-check input[name="features[]"]');
+
+    for (const param of parameters) {
+        if (param.display_name) {
+            const checkbox = Array.from(checkboxes).find(cb => {
+                const label = cb.closest('.form-check').querySelector('label');
+                return label && label.textContent.trim() === param.display_name;
+            });
+            
+            if (checkbox && !checkbox.closest('.box').style.display) {
+                console.log('Setting checkbox for:', param.display_name);
+                checkbox.click();
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+        }
     }
 
     if (data.images && data.images.length > 0) {
