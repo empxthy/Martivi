@@ -18,7 +18,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     const jsonData = JSON.parse(nextDataScript.textContent);
                     const statement = jsonData.props.pageProps.dehydratedState.queries[0].state.data.data.statement;
                     
-                    const images = statement.gallery.map(item => item.image.thumb_webp);
+                    const images = statement.images.map(item => item.large);
                     
                     fillSSForm({
                         title: doc.querySelector('title').textContent,
@@ -360,7 +360,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     const jsonData = JSON.parse(nextDataScript.textContent);
                     const statement = jsonData.props.pageProps.dehydratedState.queries[0].state.data.data.statement;
                     
-                    const images = statement.gallery.map(item => item.image.thumb_webp);
+                    const images = statement.images.map(item => item.large);
                     
                     fillMyHomeForm({
                         title: doc.querySelector('title').textContent,
@@ -564,19 +564,27 @@ async function fillMyHomeForm(data) {
             
             const buildYearOptions = document.querySelectorAll('.options-list li');
             for (const option of buildYearOptions) {
-                if (option.textContent.trim() === data.buildYear.toString()) {
+                if (option.textContent.trim() === '1955-2000') {
                     option.click();
                     break;
+                }
+                else {
+                    
                 }
             }
         }
 
         await new Promise(resolve => setTimeout(resolve, 500));
-        const citySelect = document.querySelector('.luk-custom-select input');
-        if (citySelect) {
-            citySelect.value = data.city;
-            citySelect.dispatchEvent(new Event('input', { bubbles: true }));
-            citySelect.dispatchEvent(new Event('change', { bubbles: true }));
+        const citySelectElement = document.evaluate('//*[@id="0"]/div[4]/div/div/div/div[1]', document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+
+        if (citySelectElement) {
+            const citySelectInput = citySelectElement.querySelector('input');
+            
+            if (citySelectInput) {
+                citySelectInput.value = data.city;
+                citySelectInput.dispatchEvent(new Event('input', { bubbles: true }));
+                citySelectInput.dispatchEvent(new Event('change', { bubbles: true }));
+            }
         }
 
         const addressInput = document.querySelector('input[placeholder=" "]');
@@ -761,7 +769,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     const jsonData = JSON.parse(nextDataScript.textContent);
                     const statement = jsonData.props.pageProps.dehydratedState.queries[0].state.data.data.statement;
                     
-                    const images = statement.gallery.map(item => item.image.thumb_webp);
+                    const images = statement.images.map(item => item.large);
                     console.log('Found images:', images);
                     
                     fillUniproForm({
